@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { Store, ShieldCheck, Database, Server } from 'lucide-react';
+import { Store, ShieldCheck } from 'lucide-react';
 import api from './services/api';
 import StatsCards from './components/StatsCards';
 import LowStockBanner from './components/LowStockBanner';
@@ -189,6 +189,15 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="main-content">
+        <section className="page-intro" aria-labelledby="page-title">
+          <div>
+            <div className="page-eyebrow"><span className="eyebrow-dot" /> INVENTORY MANAGEMENT</div>
+            <h2 id="page-title">Inventory overview</h2>
+            <p>Track your products, stock levels, and restocking needs in one place.</p>
+          </div>
+          <div className="inventory-summary"><Store size={16} /><span>Shop inventory</span></div>
+        </section>
+
         {/* Low-Stock Warning Banner if any items are under 5 */}
         <LowStockBanner
           count={stats?.lowStockCount}

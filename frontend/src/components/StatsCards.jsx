@@ -1,5 +1,5 @@
 import React from 'react';
-import { Package, AlertTriangle, AlertCircle, DollarSign, Layers } from 'lucide-react';
+import { Package, AlertTriangle, AlertCircle, DollarSign } from 'lucide-react';
 
 export default function StatsCards({ stats, activeFilter, onFilterChange }) {
   const formatCurrency = (val) => {
@@ -14,10 +14,12 @@ export default function StatsCards({ stats, activeFilter, onFilterChange }) {
   return (
     <div className="stats-grid">
       {/* Total Unique Products */}
-      <div 
+      <button
+        type="button"
         className={`stat-card clickable ${activeFilter === 'all' ? 'active' : ''}`}
         onClick={() => onFilterChange('all')}
         title="View all products"
+        aria-pressed={activeFilter === 'all'}
       >
         <div>
           <div className="stat-label">Total Products</div>
@@ -26,13 +28,15 @@ export default function StatsCards({ stats, activeFilter, onFilterChange }) {
         <div className="stat-icon" style={{ background: '#eff6ff', color: '#2563eb' }}>
           <Package size={26} />
         </div>
-      </div>
+      </button>
 
       {/* Low Stock Warning Card (< 5 units) */}
-      <div
+      <button
+        type="button"
         className={`stat-card clickable warning-card ${activeFilter === 'low-stock' ? 'active' : ''}`}
         onClick={() => onFilterChange(activeFilter === 'low-stock' ? 'all' : 'low-stock')}
         title="Click to view items needing restocking"
+        aria-pressed={activeFilter === 'low-stock'}
       >
         <div>
           <div className="stat-label" style={{ color: '#c2410c' }}>Low Stock Alert (&lt; 5)</div>
@@ -43,13 +47,15 @@ export default function StatsCards({ stats, activeFilter, onFilterChange }) {
         <div className="stat-icon" style={{ background: '#ffedd5', color: '#ea580c' }}>
           <AlertTriangle size={26} />
         </div>
-      </div>
+      </button>
 
       {/* Out of Stock Card (0 units) */}
-      <div
+      <button
+        type="button"
         className={`stat-card clickable ${activeFilter === 'out-of-stock' ? 'active' : ''}`}
         onClick={() => onFilterChange(activeFilter === 'out-of-stock' ? 'all' : 'out-of-stock')}
         title="Click to view out of stock items"
+        aria-pressed={activeFilter === 'out-of-stock'}
       >
         <div>
           <div className="stat-label" style={{ color: '#b91c1c' }}>Out of Stock</div>
@@ -60,7 +66,7 @@ export default function StatsCards({ stats, activeFilter, onFilterChange }) {
         <div className="stat-icon" style={{ background: '#fee2e2', color: '#dc2626' }}>
           <AlertCircle size={26} />
         </div>
-      </div>
+      </button>
 
       {/* Total Inventory Value */}
       <div className="stat-card">

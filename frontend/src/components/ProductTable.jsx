@@ -43,6 +43,13 @@ export default function ProductTable({
 
   return (
     <div className="table-card">
+      <div className="table-heading">
+        <div>
+          <h2>Products</h2>
+          <p>{products.length} {products.length === 1 ? 'item' : 'items'} shown</p>
+        </div>
+        <span className="table-heading-icon"><PackageX size={18} /></span>
+      </div>
       <div className="table-responsive">
         <table className="inventory-table">
           <thead>
