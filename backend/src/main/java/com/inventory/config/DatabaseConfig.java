@@ -5,82 +5,60 @@ import com.zaxxer.hikari.HikariDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 import javax.sql.DataSource;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 @Configuration
 public class DatabaseConfig {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseConfig.class);
 
-    @Value("${spring.datasource.url:}")
-    private String defaultJdbcUrl;
+    @Value("${spring.datasource.url:jdbc:h2:file:./data/inventorydb;DB_CLOSE_DELAY=-1}")
+    private String datasourceUrl;
 
     @Value("${spring.datasource.username:sa}")
-    private String defaultUsername;
+    private String datasourceUsername;
 
     @Value("${spring.datasource.password:}")
-    private String defaultPassword;
+    private String datasourcePassword;
 
     @Bean
     @Primary
     public DataSource dataSource() {
-        String renderDbUrl = System.getenv("DATABASE_URL");
         HikariConfig config = new HikariConfig();
 
-        if (renderDbUrl != null && !renderDbUrl.trim().isEmpty() &&
-                (renderDbUrl.startsWith("postgres://") || renderDbUrl.startsWith("postgresql://"))) {
-            log.info("Detected Render DATABASE_URL environment variable. Configuring PostgreSQL DataSource...");
-            try {
-                URI uri = new URI(renderDbUrl);
-                String userInfo = uri.getUserInfo();
-                String username = "";
-                String password = "";
-                if (userInfo != null && userInfo.contains(":")) {
-                    String[] parts = userInfo.split(":", 2);
-                    username = parts[0];
-                    password = parts[1];
-                }
+        config.setJdbcUrl(datasourceUrl);
+        config.setUsername(datasourceUsername);
+        config.setPassword(datasourcePassword);
 
-                int port = uri.getPort() > 0 ? uri.getPort() : 5432;
-                String jdbcUrl = "jdbc:postgresql://" + uri.getHost() + ":" + port + uri.getPath();
-
-                // Append sslmode=require for Render external connections if query params are not present
-                if (uri.getQuery() != null && !uri.getQuery().isEmpty()) {
-                    jdbcUrl += "?" + uri.getQuery();
-                }
-
-                config.setDriverClassName("org.postgresql.Driver");
-                config.setJdbcUrl(jdbcUrl);
-                config.setUsername(username);
-                config.setPassword(password);
-                log.info("PostgreSQL JDBC URL configured: jdbc:postgresql://{}:{}{}", uri.getHost(), port, uri.getPath());
-            } catch (URISyntaxException e) {
-                log.error("Failed to parse DATABASE_URL: {}. Falling back to default configuration.", e.getMessage());
-                fallbackConfig(config);
-            }
+        // Auto-select the correct driver based on the JDBC URL
+        if (datasourceUrl.contains("mysql") || datasourceUrl.contains("tidb")) {
+            // TiDB is MySQL-compatible — use MySQL connector
+            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+            // TiDB-recommended connection pool settings
+            config.setConnectionTestQuery("SELECT 1");
+            config.setMaximumPoolSize(10);
+            config.setMinimumIdle(2);
+            config.setConnectionTimeout(30000);
+            config.setIdleTimeout(600000);
+            config.setMaxLifetime(1800000);
+            log.info("Configured MySQL/TiDB DataSource: {}", maskPassword(datasourceUrl));
+        } else if (datasourceUrl.contains("h2")) {
+            config.setDriverClassName("org.h2.Driver");
+            log.info("Configured H2 local DataSource (development mode).");
         } else {
-            fallbackConfig(config);
+            log.warn("Unknown DataSource URL scheme — using default driver detection: {}", datasourceUrl);
         }
 
         return new HikariDataSource(config);
     }
 
-    private void fallbackConfig(HikariConfig config) {
-        log.info("Using standard DataSource configuration with URL: {}", defaultJdbcUrl);
-        config.setJdbcUrl(defaultJdbcUrl);
-        config.setUsername(defaultUsername);
-        config.setPassword(defaultPassword);
-        if (defaultJdbcUrl.contains("postgresql")) {
-            config.setDriverClassName("org.postgresql.Driver");
-        } else if (defaultJdbcUrl.contains("h2")) {
-            config.setDriverClassName("org.h2.Driver");
-        }
+    /** Masks the password in the URL for safe logging */
+    private String maskPassword(String url) {
+        return url.replaceAll("password=[^&]+", "password=****")
+                  .replaceAll(":[^@:/]+@", ":****@");
     }
 }
